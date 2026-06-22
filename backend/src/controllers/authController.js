@@ -30,8 +30,8 @@ export const registerUser = async (req, res) => {
             [id, upahaar_id, role, full_name, email, phone, password_hash, face_photo_url],
             function (err) {
                 if (err) {
-                    console.error('Registration error:', err.message);
-                    return res.status(500).json({ message: 'Error registering user, phone/email might already exist' });
+                    console.error("DB Error in citizen register:", err);
+                    return res.status(500).json({ message: 'DB Error: ' + err.message });
                 }
                 
                 // Initialize empty medical profile for CITIZEN with DOB if provided
