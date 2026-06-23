@@ -90,3 +90,76 @@ Do not invent any information. Be direct and professional.`;
         });
     });
 };
+
+export const scanPatientFace = async (req, res) => {
+    const { imageBase64 } = req.body;
+
+    if (!imageBase64) {
+        return res.status(400).json({ message: 'Face image is required' });
+    }
+
+    if (!process.env.GEMINI_API_KEY) {
+        return res.status(500).json({ message: 'AI processing is disabled (No API Key)' });
+    }
+
+    // Strip "data:image/...;base64," if present
+    const targetBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
+
+    db.all(`SELECT upahaar_id, face_photo_url FROM users WHERE role = 'CITIZEN' AND face_photo_url IS NOT NULL`, async (err, citizens) => {
+        if (err) return res.status(500).json({ message: 'Database error fetching citizens' });
+        
+        if (citizens.length === 0) {
+            return res.status(404).json({ message: 'No citizens registered with face photos.' });
+        }
+
+        try {
+            const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+            const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+            let prompt = `You are a highly secure forensic facial recognition system.
+I am providing you with one TARGET face image (the first image), followed by a database of ${citizens.length} KNOWN faces.
+
+Your job is to identify which KNOWN face matches the TARGET face.
+Respond ONLY with the exact UPAHAAR ID of the matched citizen in raw JSON format like this: {"match": "UPHR-XXXXXXXXXX"}
+If there is no match or you are unsure, respond with {"match": null}
+`;
+
+            const contents = [
+                prompt,
+                {
+                    inlineData: { data: targetBase64, mimeType: 'image/jpeg' }
+                }
+            ];
+
+            for (const citizen of citizens) {
+                const base64Data = citizen.face_photo_url.replace(/^data:image\/\w+;base64,/, "");
+                contents.push(`\n\n--- KNOWN CITIZEN ID: ${citizen.upahaar_id} ---\n`);
+                contents.push({
+                    inlineData: { data: base64Data, mimeType: 'image/jpeg' }
+                });
+            }
+
+            const result = await model.generateContent(contents);
+            const responseText = await result.response.text();
+            
+            try {
+                // Strip markdown backticks if Gemini added them
+                const cleanJson = responseText.replace(/```json/g, '').replace(/```/g, '').trim();
+                const jsonResponse = JSON.parse(cleanJson);
+                
+                if (jsonResponse.match) {
+                    return res.json({ upahaar_id: jsonResponse.match });
+                } else {
+                    return res.status(404).json({ message: 'No matching face found in the database.' });
+                }
+            } catch (parseError) {
+                console.error("Failed to parse Gemini response:", responseText);
+                return res.status(500).json({ message: 'AI returned invalid response format.' });
+            }
+
+        } catch (error) {
+            console.error("Gemini AI Face Scan Error:", error);
+            res.status(500).json({ message: 'Failed to process AI face scan' });
+        }
+    });
+};

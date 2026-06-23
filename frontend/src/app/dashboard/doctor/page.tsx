@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Scan, Search, User, Clock, Shield, LogOut, CheckCircle, AlertCircle, Phone, Pill, BrainCircuit } from 'lucide-react';
+import { Scan, Search, User, Clock, Shield, LogOut, CheckCircle, AlertCircle, Phone, Pill, BrainCircuit, Camera } from 'lucide-react';
 import Link from 'next/link';
 import Script from 'next/script';
 
@@ -25,9 +25,15 @@ export default function DoctorDashboard() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const codeReaderRef = useRef<any>(null);
 
+  // Face Scanner State
+  const [isFaceScanning, setIsFaceScanning] = useState(false);
+  const faceVideoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
   useEffect(() => {
     return () => {
       stopScanner();
+      stopFaceScanner();
     };
   }, []);
 
@@ -74,6 +80,63 @@ export default function DoctorDashboard() {
       try {
         codeReaderRef.current.clear();
       } catch(e) {}
+    }
+  };
+
+  const startFaceScanner = async () => {
+    setIsFaceScanning(true);
+    setError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+      if (faceVideoRef.current) {
+        faceVideoRef.current.srcObject = stream;
+      }
+    } catch (err) {
+      setError("Camera access denied.");
+      setIsFaceScanning(false);
+    }
+  };
+
+  const stopFaceScanner = () => {
+    setIsFaceScanning(false);
+    const stream = faceVideoRef.current?.srcObject as MediaStream;
+    if (stream) stream.getTracks().forEach(t => t.stop());
+  };
+
+  const captureAndScanFace = async () => {
+    if (!faceVideoRef.current || !canvasRef.current) return;
+    const video = faceVideoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d')?.drawImage(video, 0, 0);
+    
+    const base64Image = canvas.toDataURL('image/jpeg', 0.8);
+    stopFaceScanner();
+    
+    setLoading(true);
+    setError(null);
+    setPatientData(null);
+    
+    try {
+      const token = localStorage.getItem('upahaar_token');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/doctors/scan-face`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageBase64: base64Image })
+      });
+      const data = await response.json();
+      
+      if (response.ok && data.upahaar_id) {
+        setUpahaarId(data.upahaar_id);
+        fetchPatientData(data.upahaar_id);
+      } else {
+        setError(data.message || "Face not recognized in database.");
+        setLoading(false);
+      }
+    } catch (err) {
+      setError("AI connection error.");
+      setLoading(false);
     }
   };
 
@@ -220,6 +283,30 @@ export default function DoctorDashboard() {
                      </div>
                   </form>
                </div>
+
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 text-center">
+                   <h3 className="font-bold text-lg mb-4 text-purple-800 flex justify-center items-center gap-2"><BrainCircuit size={20}/> AI Facial Recognition</h3>
+                   
+                   {isFaceScanning ? (
+                     <div className="space-y-4">
+                        <div className="w-full aspect-square bg-black rounded-xl overflow-hidden relative">
+                          <video ref={faceVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+                          <canvas ref={canvasRef} className="hidden" />
+                          <div className="absolute inset-0 border-[4px] border-purple-500/50 rounded-xl m-4 z-10 pointer-events-none"></div>
+                        </div>
+                        <button onClick={captureAndScanFace} className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-bold transition-colors">Capture & Identify</button>
+                        <button onClick={stopFaceScanner} className="text-sm font-semibold text-red-500 hover:underline block w-full">Cancel</button>
+                     </div>
+                   ) : (
+                     <button 
+                       onClick={startFaceScanner}
+                       className="w-full bg-purple-100 hover:bg-purple-200 text-purple-700 p-8 rounded-xl flex flex-col items-center justify-center gap-3 transition-all"
+                     >
+                       <Camera size={40} className="opacity-80" />
+                       <span className="font-bold">Scan Patient Face</span>
+                     </button>
+                   )}
+                </div>
             </div>
 
             {/* Right Column: Patient Data */}
