@@ -103,6 +103,7 @@ Do not invent any information. Be direct and professional.`;
             }
         });
     });
+    });
 };
 
 export const scanPatientFace = async (req, res) => {
