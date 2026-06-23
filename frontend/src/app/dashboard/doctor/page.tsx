@@ -31,39 +31,49 @@ export default function DoctorDashboard() {
     };
   }, []);
 
-  const startScanner = async () => {
+  const startScanner = () => {
     setIsScanning(true);
     setError(null);
-    try {
-      if (typeof window !== 'undefined' && (window as any).ZXingBrowser) {
-        codeReaderRef.current = new (window as any).ZXingBrowser.BrowserQRCodeReader();
-        if (videoRef.current && codeReaderRef.current) {
-          // Will prompt for camera permission
-          await codeReaderRef.current.decodeFromVideoDevice(undefined, videoRef.current, (result: any, err: any) => {
-            if (result) {
-              const scannedId = result.getText();
-              setUpahaarId(scannedId);
-              stopScanner();
-              fetchPatientData(scannedId);
+    setTimeout(() => {
+      try {
+        if (typeof window !== 'undefined' && (window as any).Html5QrcodeScanner) {
+          const scanner = new (window as any).Html5QrcodeScanner(
+            "qr-reader",
+            { fps: 10, qrbox: { width: 250, height: 250 } },
+            false
+          );
+          
+          codeReaderRef.current = scanner;
+          
+          scanner.render(
+            (decodedText: string) => {
+              setUpahaarId(decodedText);
+              scanner.clear();
+              setIsScanning(false);
+              fetchPatientData(decodedText);
+            },
+            (err: any) => {
+              // ignore
             }
-          });
+          );
+        } else {
+          setError("Scanner library not loaded yet. Try again in a moment.");
+          setIsScanning(false);
         }
-      } else {
-        setError("Scanner library not loaded yet. Try again in a moment.");
+      } catch (err) {
+        console.error(err);
+        setError("Failed to start camera. Please type the ID manually.");
         setIsScanning(false);
       }
-    } catch (err) {
-      console.error(err);
-      setError("Failed to access camera. Please allow camera permissions or type the ID manually.");
-      setIsScanning(false);
-    }
+    }, 100);
   };
 
   const stopScanner = () => {
     setIsScanning(false);
-    const stream = videoRef.current?.srcObject as MediaStream;
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
+    if (codeReaderRef.current) {
+      try {
+        codeReaderRef.current.clear();
+      } catch(e) {}
     }
   };
 
@@ -145,7 +155,7 @@ export default function DoctorDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
-      <Script src="https://unpkg.com/@zxing/browser@0.1.4/umd/zxing-browser.min.js" strategy="lazyOnload" />
+      <Script src="https://unpkg.com/html5-qrcode" strategy="lazyOnload" />
       <aside className="w-full md:w-64 bg-medical-dark text-white p-6 flex flex-col min-h-[10vh] md:min-h-screen">
         <h2 className="text-2xl font-bold mb-8">UPAHAAR</h2>
         <nav className="flex-1 space-y-4">
@@ -176,9 +186,8 @@ export default function DoctorDashboard() {
                   
                   {isScanning ? (
                     <div className="space-y-4">
-                       <div className="w-full aspect-square bg-black rounded-xl overflow-hidden relative">
-                         <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
-                         <div className="absolute inset-0 border-[4px] border-medical-blue/50 rounded-xl m-4 z-10 pointer-events-none"></div>
+                       <div className="w-full bg-white rounded-xl overflow-hidden relative border-2 border-medical-blue">
+                         <div id="qr-reader" className="w-full h-full"></div>
                        </div>
                        <button onClick={stopScanner} className="text-sm font-semibold text-red-500 hover:underline">Cancel Scan</button>
                     </div>
