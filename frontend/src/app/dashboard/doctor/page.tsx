@@ -177,7 +177,7 @@ export default function DoctorDashboard() {
                   {isScanning ? (
                     <div className="space-y-4">
                        <div className="w-full aspect-square bg-black rounded-xl overflow-hidden relative">
-                         <video ref={videoRef} className="w-full h-full object-cover" />
+                         <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
                          <div className="absolute inset-0 border-[4px] border-medical-blue/50 rounded-xl m-4 z-10 pointer-events-none"></div>
                        </div>
                        <button onClick={stopScanner} className="text-sm font-semibold text-red-500 hover:underline">Cancel Scan</button>
