@@ -1,5 +1,6 @@
 import { db } from '../db/sqliteSetup.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { v4 as uuidv4 } from 'uuid';
 
 export const scanPatientQr = (req, res) => {
     const doctorId = req.user.id;
@@ -9,22 +10,30 @@ export const scanPatientQr = (req, res) => {
         return res.status(400).json({ message: 'UPAHAAR ID is required' });
     }
 
-    // 1. Find the citizen's profile
-    db.get(`SELECT u.id, u.full_name, u.email, u.phone, u.upahaar_id, m.* 
-            FROM users u 
-            LEFT JOIN medical_profiles m ON u.id = m.user_id 
-            WHERE u.upahaar_id = ? AND u.role = 'CITIZEN'`, 
-    [upahaar_id], (err, patient) => {
+    // 1. Check if Doctor is blocked by this citizen
+    db.get(`SELECT * FROM revoked_access r 
+            JOIN users u ON u.id = r.citizen_id
+            WHERE u.upahaar_id = ? AND r.doctor_id = ?`, [upahaar_id, doctorId], (err, revoked) => {
         if (err) return res.status(500).json({ message: 'Database error' });
-        if (!patient) return res.status(404).json({ message: 'Patient not found or invalid QR' });
+        if (revoked) return res.status(403).json({ message: 'Consent Revoked by Patient. Access Denied.' });
 
-        // 2. Fetch the citizen's timeline (prescriptions)
-        db.all(`SELECT * FROM prescriptions WHERE citizen_id = ? ORDER BY created_at DESC`, [patient.id], (err, prescriptions) => {
-            if (err) return res.status(500).json({ message: 'Error fetching patient timeline' });
+        // 2. Find the citizen's profile
+        db.get(`SELECT u.id, u.full_name, u.email, u.phone, u.upahaar_id, m.* 
+                FROM users u 
+                LEFT JOIN medical_profiles m ON u.id = m.user_id 
+                WHERE u.upahaar_id = ? AND u.role = 'CITIZEN'`, 
+        [upahaar_id], (err, patient) => {
+            if (err) return res.status(500).json({ message: 'Database error' });
+            if (!patient) return res.status(404).json({ message: 'Patient not found or invalid QR' });
 
-            res.json({
-                patient,
-                timeline: prescriptions
+            // 3. Fetch the citizen's timeline (prescriptions)
+            db.all(`SELECT * FROM prescriptions WHERE citizen_id = ? ORDER BY created_at DESC`, [patient.id], (err, prescriptions) => {
+                if (err) return res.status(500).json({ message: 'Error fetching patient timeline' });
+
+                res.json({
+                    patient,
+                    timeline: prescriptions
+                });
             });
         });
     });
@@ -42,7 +51,12 @@ export const searchPatientHistoryAI = async (req, res) => {
         return res.status(500).json({ message: 'AI processing is disabled (No API Key)' });
     }
 
-    db.get(`SELECT id, full_name FROM users WHERE upahaar_id = ? AND role = 'CITIZEN'`, [upahaar_id], (err, patient) => {
+    const doctorId = req.user.id;
+
+    db.get(`SELECT * FROM revoked_access r JOIN users u ON u.id = r.citizen_id WHERE u.upahaar_id = ? AND r.doctor_id = ?`, [upahaar_id, doctorId], (err, revoked) => {
+        if (err || revoked) return res.status(403).json({ message: 'Consent Revoked by Patient. Access Denied.' });
+
+        db.get(`SELECT id, full_name FROM users WHERE upahaar_id = ? AND role = 'CITIZEN'`, [upahaar_id], (err, patient) => {
         if (err || !patient) return res.status(404).json({ message: 'Patient not found' });
 
         db.all(`SELECT created_at, ai_extracted_data, medicines, raw_ocr_text FROM prescriptions WHERE citizen_id = ? ORDER BY created_at ASC`, [patient.id], async (err, prescriptions) => {
@@ -105,7 +119,9 @@ export const scanPatientFace = async (req, res) => {
     // Strip "data:image/...;base64," if present
     const targetBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
 
-    db.all(`SELECT upahaar_id, face_photo_url FROM users WHERE role = 'CITIZEN' AND face_photo_url IS NOT NULL`, async (err, citizens) => {
+    const doctorId = req.user.id;
+
+    db.all(`SELECT id, upahaar_id, face_photo_url FROM users WHERE role = 'CITIZEN' AND face_photo_url IS NOT NULL`, async (err, citizens) => {
         if (err) return res.status(500).json({ message: 'Database error fetching citizens' });
         
         if (citizens.length === 0) {
@@ -148,6 +164,15 @@ If there is no match or you are unsure, respond with {"match": null}
                 const jsonResponse = JSON.parse(cleanJson);
                 
                 if (jsonResponse.match) {
+                    const matchedCitizen = citizens.find(c => c.upahaar_id === jsonResponse.match);
+                    if (matchedCitizen) {
+                        const logId = uuidv4();
+                        db.run(`INSERT INTO access_logs (id, citizen_id, doctor_id, method, status) VALUES (?, ?, ?, ?, ?)`,
+                            [logId, matchedCitizen.id, doctorId, 'FACE_SCAN', 'PENDING'], (err) => {
+                                if (err) console.error("Failed to log access event:", err);
+                            }
+                        );
+                    }
                     return res.json({ upahaar_id: jsonResponse.match });
                 } else {
                     return res.status(404).json({ message: 'No matching face found in the database.' });

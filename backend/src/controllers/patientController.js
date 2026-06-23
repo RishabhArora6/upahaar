@@ -228,3 +228,44 @@ export const getNearbyPharmacies = async (req, res) => {
         res.status(500).json({ message: 'Internal server error' });
     }
 };
+
+export const getNotifications = (req, res) => {
+    const citizenId = req.user.id;
+    db.all(`
+        SELECT a.id, a.method, a.status, a.created_at, u.full_name as doctor_name
+        FROM access_logs a
+        JOIN users u ON a.doctor_id = u.id
+        WHERE a.citizen_id = ?
+        ORDER BY a.created_at DESC
+    `, [citizenId], (err, logs) => {
+        if (err) return res.status(500).json({ message: 'Error fetching notifications' });
+        res.json({ notifications: logs });
+    });
+};
+
+export const acknowledgeNotification = (req, res) => {
+    const citizenId = req.user.id;
+    const logId = req.params.id;
+    db.run(`UPDATE access_logs SET status = 'ACKNOWLEDGED' WHERE id = ? AND citizen_id = ?`, [logId, citizenId], function(err) {
+        if (err) return res.status(500).json({ message: 'Error updating notification' });
+        res.json({ message: 'Notification acknowledged' });
+    });
+};
+
+export const revokeNotificationAccess = (req, res) => {
+    const citizenId = req.user.id;
+    const logId = req.params.id;
+    
+    db.get(`SELECT doctor_id FROM access_logs WHERE id = ? AND citizen_id = ?`, [logId, citizenId], (err, log) => {
+        if (err || !log) return res.status(404).json({ message: 'Notification not found' });
+        
+        db.run(`INSERT OR IGNORE INTO revoked_access (citizen_id, doctor_id) VALUES (?, ?)`, [citizenId, log.doctor_id], (err2) => {
+            if (err2) return res.status(500).json({ message: 'Error revoking access' });
+            
+            db.run(`UPDATE access_logs SET status = 'REVOKED' WHERE id = ?`, [logId], (err3) => {
+                if (err3) console.error("Error updating log status", err3);
+                res.json({ message: 'Access revoked successfully' });
+            });
+        });
+    });
+};

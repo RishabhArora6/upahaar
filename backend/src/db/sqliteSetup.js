@@ -117,5 +117,27 @@ export const initializeDB = async () => {
         FOREIGN KEY (doctor_id) REFERENCES users(id)
     )`);
     
+    // Security Access Logs Table
+    await runCreate(`CREATE TABLE IF NOT EXISTS access_logs (
+        id TEXT PRIMARY KEY,
+        citizen_id TEXT NOT NULL,
+        doctor_id TEXT NOT NULL,
+        method TEXT NOT NULL,
+        status TEXT DEFAULT 'PENDING',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (citizen_id) REFERENCES users(id),
+        FOREIGN KEY (doctor_id) REFERENCES users(id)
+    )`);
+
+    // Revoked Access (Blocklist) Table
+    await runCreate(`CREATE TABLE IF NOT EXISTS revoked_access (
+        citizen_id TEXT NOT NULL,
+        doctor_id TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (citizen_id, doctor_id),
+        FOREIGN KEY (citizen_id) REFERENCES users(id),
+        FOREIGN KEY (doctor_id) REFERENCES users(id)
+    )`);
+    
     console.log('Database tables verified/created.');
 };

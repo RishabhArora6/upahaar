@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, Clock, FileText, Settings, QrCode, Pill, CheckCircle2, Trash2 } from 'lucide-react';
+import { Upload, Clock, FileText, Settings, QrCode, Pill, CheckCircle2, Trash2, ShieldAlert, Ban } from 'lucide-react';
 import Link from 'next/link';
 
 export default function CitizenDashboard() {
@@ -12,6 +12,7 @@ export default function CitizenDashboard() {
   const [activeMedicines, setActiveMedicines] = useState<any[]>([]);
   const [takenMeds, setTakenMeds] = useState<number[]>([]);
   const [viewModes, setViewModes] = useState<Record<string, 'summary' | 'raw'>>({});
+  const [notifications, setNotifications] = useState<any[]>([]);
 
   const fetchTimeline = async () => {
     const token = localStorage.getItem('upahaar_token');
@@ -59,12 +60,47 @@ export default function CitizenDashboard() {
         alert(data.message || "Failed to delete record");
       }
     } catch (err) {
-      alert("Error connecting to server.");
+      console.error('Failed to fetch timeline:', err);
+    }
+  };
+
+  const fetchNotifications = async () => {
+    const token = localStorage.getItem('upahaar_token');
+    if (!token) return;
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/patients/notifications`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(data.notifications || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err);
+    }
+  };
+
+  const handleNotificationAction = async (id: string, action: 'acknowledge' | 'revoke') => {
+    const token = localStorage.getItem('upahaar_token');
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/patients/notifications/${id}/${action}`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        fetchNotifications();
+      } else {
+        const data = await response.json();
+        alert(data.message || `Failed to ${action} notification`);
+      }
+    } catch (err) {
+      console.error(`Failed to ${action} notification:`, err);
     }
   };
 
   useEffect(() => {
     fetchTimeline();
+    fetchNotifications();
   }, []);
 
   const handleUpload = async (e: React.FormEvent) => {
@@ -137,6 +173,37 @@ export default function CitizenDashboard() {
             {/* Timeline Column */}
             <div className="lg:col-span-2 space-y-6">
               
+              {/* Security Notifications */}
+              {notifications.filter(n => n.status === 'PENDING').length > 0 && (
+                <div className="bg-red-50 border-l-4 border-red-500 p-6 rounded-2xl shadow-sm">
+                  <h2 className="text-xl font-bold flex items-center gap-2 mb-4 text-red-800"><ShieldAlert size={24} /> Security Alerts</h2>
+                  <div className="space-y-3">
+                    {notifications.filter(n => n.status === 'PENDING').map((notif: any) => (
+                      <div key={notif.id} className="bg-white p-4 rounded-xl shadow-sm border border-red-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div>
+                          <p className="text-red-900 font-medium"><strong>Dr. {notif.doctor_name}</strong> accessed your profile via <strong>Facial Recognition</strong>.</p>
+                          <p className="text-sm text-red-600 mt-1">{new Date(notif.created_at).toLocaleString()}</p>
+                        </div>
+                        <div className="flex gap-2 w-full sm:w-auto">
+                          <button 
+                            onClick={() => handleNotificationAction(notif.id, 'acknowledge')}
+                            className="flex-1 sm:flex-none px-4 py-2 bg-green-100 text-green-700 hover:bg-green-200 font-bold rounded-lg transition-colors flex items-center justify-center gap-2 text-sm"
+                          >
+                            <CheckCircle2 size={16}/> Acknowledge
+                          </button>
+                          <button 
+                            onClick={() => handleNotificationAction(notif.id, 'revoke')}
+                            className="flex-1 sm:flex-none px-4 py-2 bg-red-600 text-white hover:bg-red-700 font-bold rounded-lg transition-colors flex items-center justify-center gap-2 text-sm"
+                          >
+                            <Ban size={16}/> Revoke Access
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Active Medication Reminders */}
               {activeMedicines.length > 0 && (
                 <div className="bg-gradient-to-r from-medical-blue to-blue-600 rounded-3xl p-6 text-white shadow-xl">
