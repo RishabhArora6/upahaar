@@ -1,0 +1,12 @@
+Our solution for these grave issues is a simple yet effective smart digital healthcare wallet which we call The UPAHAAR. It is a secure & user friendly interface to store and organize your healthcare records including all prescriptions, medications, vaccination data and emergency information. We aim to provide the best user experience even for the elderly by using artificial intelligence and high security methods to conserve your data, which a lot of previously existing solutions lack.
+
+
+What we do differently with Upahaar is that we provide instant access to all of medical timeline without you searching from endless reports and prescriptions and thinking about your data privacy. We use the google ai studio to contextualise and summarise your entire data to make it easier for you and the doctor to access the clinical timeline. We have also provided an emergency bypass to retrieve medical data without needing any OTP login with the help of facial recognition systems.
+
+
+You can take a look at the system architecture which provides an overall summary of how our webapp is going to work.
+
+
+This is the Tech Stack presented to your screen. The frontend has been made using HTML, CSS, JS, and Bootstrap for different screen compatibilities and Vercel for cloud storage. To create our database we have used PostgreSQL for management and Supabase for storage of this database. We have used Node.js and Render for backend & storage. We have also integrated gemini API for summarization and face recognition, OCR for prescription image to text conversion and Google maps places API for locating the user and displaying nearby pharmacies.
+
+Now over to Aaryan to discuss the rest.

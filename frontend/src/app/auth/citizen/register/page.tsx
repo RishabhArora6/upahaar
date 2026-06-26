@@ -13,9 +13,11 @@ export default function CitizenRegister() {
     dob: '',
     face_photo: null as File | null,
   });
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/auth/register`, {
         method: 'POST',
@@ -42,6 +44,8 @@ export default function CitizenRegister() {
     } catch (err) {
       console.error(err);
       alert('Failed to connect to the backend server. Is it running on port 5000?');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -129,10 +133,18 @@ export default function CitizenRegister() {
           <motion.button 
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="w-full py-4 bg-medical-blue text-white rounded-xl font-bold text-lg shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 transition-all"
+            className={`w-full py-4 text-white rounded-xl font-bold text-lg shadow-lg transition-all flex justify-center items-center gap-2 ${isLoading ? 'bg-gray-400 cursor-not-allowed shadow-none' : 'bg-medical-blue shadow-blue-500/30 hover:shadow-blue-500/50'}`}
             type="submit"
+            disabled={isLoading}
           >
-            Create UPAHAAR Account
+            {isLoading ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Connecting to Server...
+              </>
+            ) : (
+              'Create UPAHAAR Account'
+            )}
           </motion.button>
           
           <p className="text-center text-sm text-gray-600 mt-4">
