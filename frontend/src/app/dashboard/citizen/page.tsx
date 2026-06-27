@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Upload, Clock, FileText, Settings, QrCode, Pill, CheckCircle2, Trash2, ShieldAlert, Ban } from 'lucide-react';
 import Link from 'next/link';
 import TwoFactorSetup from '../../components/TwoFactorSetup';
+import GoogleTranslate from '../../components/GoogleTranslate';
 
 export default function CitizenDashboard() {
   const [timeline, setTimeline] = useState<any[]>([]);
@@ -162,10 +163,13 @@ export default function CitizenDashboard() {
       <main className="flex-1 p-6 lg:p-10">
         <div className="max-w-5xl mx-auto space-y-8">
           
-          <header className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <header className="flex justify-between items-center bg-white p-6 rounded-2xl shadow-sm border border-gray-100 relative overflow-visible z-50">
             <div>
               <h1 className="text-2xl font-bold text-gray-800">Welcome back, Citizen</h1>
               <p className="text-gray-500">Manage your medical records securely.</p>
+            </div>
+            <div className="bg-medical-dark p-2 rounded-xl shadow-lg border border-gray-100">
+               <GoogleTranslate />
             </div>
           </header>
 
