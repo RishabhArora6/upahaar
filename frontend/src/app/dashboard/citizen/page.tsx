@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Upload, Clock, FileText, Settings, QrCode, Pill, CheckCircle2, Trash2, ShieldAlert, Ban } from 'lucide-react';
 import Link from 'next/link';
+import TwoFactorSetup from '../../components/TwoFactorSetup';
 
 export default function CitizenDashboard() {
   const [timeline, setTimeline] = useState<any[]>([]);
@@ -327,6 +328,9 @@ export default function CitizenDashboard() {
                     <Link href="/dashboard/citizen/vaccines" className="block bg-white/10 hover:bg-white/20 p-3 rounded-lg transition text-sm font-semibold">💉 Vaccine Scheduler</Link>
                  </div>
               </div>
+              
+              {/* Security Setup */}
+              <TwoFactorSetup />
             </div>
 
           </div>

@@ -2,6 +2,8 @@ import { db } from '../db/sqliteSetup.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
+import speakeasy from 'speakeasy';
+import qrcode from 'qrcode';
 
 
 const generateUpahaarID = () => {
@@ -50,7 +52,7 @@ export const registerUser = async (req, res) => {
 };
 
 export const loginUser = (req, res) => {
-    const { upahaar_id, password } = req.body;
+    const { upahaar_id, password, totp_code } = req.body;
     
     if (!upahaar_id || !password) {
         return res.status(400).json({ message: 'UPAHAAR ID and password are required' });
@@ -64,6 +66,21 @@ export const loginUser = (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password_hash);
         if (!isMatch) {
             return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        // 2FA Check
+        if (user.is_totp_enabled) {
+            if (!totp_code) {
+                return res.status(400).json({ message: '2FA code is required' });
+            }
+            const verified = speakeasy.totp.verify({
+                secret: user.totp_secret,
+                encoding: 'base32',
+                token: totp_code
+            });
+            if (!verified) {
+                return res.status(400).json({ message: 'Invalid 2FA code' });
+            }
         }
 
         const payload = {
@@ -84,5 +101,47 @@ export const loginUser = (req, res) => {
                 res.json({ token, role: user.role, upahaar_id: user.upahaar_id, is_setup_complete });
             }
         );
+    });
+};
+
+export const generate2FA = async (req, res) => {
+    const userId = req.user.id;
+    const secret = speakeasy.generateSecret({ name: `UPAHAAR (${req.user.upahaar_id})` });
+    
+    db.run(`UPDATE users SET totp_secret = ? WHERE id = ?`, [secret.base32, userId], async (err) => {
+        if (err) return res.status(500).json({ message: 'Database error' });
+        
+        try {
+            const dataUrl = await qrcode.toDataURL(secret.otpauth_url);
+            res.json({ qrCode: dataUrl });
+        } catch (qrErr) {
+            res.status(500).json({ message: 'Error generating QR code' });
+        }
+    });
+};
+
+export const verifyAndEnable2FA = (req, res) => {
+    const userId = req.user.id;
+    const { totp_code } = req.body;
+    
+    if (!totp_code) return res.status(400).json({ message: 'Code is required' });
+    
+    db.get(`SELECT totp_secret FROM users WHERE id = ?`, [userId], (err, user) => {
+        if (err || !user || !user.totp_secret) return res.status(400).json({ message: 'Setup not initiated' });
+        
+        const verified = speakeasy.totp.verify({
+            secret: user.totp_secret,
+            encoding: 'base32',
+            token: totp_code
+        });
+        
+        if (verified) {
+            db.run(`UPDATE users SET is_totp_enabled = 1 WHERE id = ?`, [userId], (updateErr) => {
+                if (updateErr) return res.status(500).json({ message: 'Database error' });
+                res.json({ message: '2FA successfully enabled!' });
+            });
+        } else {
+            res.status(400).json({ message: 'Invalid code, please try again.' });
+        }
     });
 };

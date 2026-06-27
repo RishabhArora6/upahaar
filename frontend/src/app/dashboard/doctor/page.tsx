@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { Scan, Search, User, Clock, Shield, LogOut, CheckCircle, AlertCircle, Phone, Pill, BrainCircuit, Camera } from 'lucide-react';
 import Link from 'next/link';
 import Script from 'next/script';
+import TwoFactorSetup from '../../components/TwoFactorSetup';
 
 export default function DoctorDashboard() {
   const [upahaarId, setUpahaarId] = useState('');
@@ -307,6 +308,9 @@ export default function DoctorDashboard() {
                      </button>
                    )}
                 </div>
+                
+                {/* Security Setup */}
+                <TwoFactorSetup />
             </div>
 
             {/* Right Column: Patient Data */}

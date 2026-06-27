@@ -76,6 +76,8 @@ export const initializeDB = async () => {
         phone TEXT UNIQUE NOT NULL,
         password_hash TEXT NOT NULL,
         face_photo_url TEXT,
+        totp_secret TEXT,
+        is_totp_enabled INTEGER DEFAULT 0,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 

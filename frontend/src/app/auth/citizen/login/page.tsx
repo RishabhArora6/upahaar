@@ -5,10 +5,12 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 
 export default function CitizenLogin() {
-  const [credentials, setCredentials] = useState({ upahaar_id: '', password: '' });
+  const [credentials, setCredentials] = useState({ upahaar_id: '', password: '', totp_code: '' });
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/auth/login`, {
         method: 'POST',
@@ -32,6 +34,8 @@ export default function CitizenLogin() {
     } catch (err) {
       console.error(err);
       alert('Failed to connect to the backend server. Is it running on port 5000?');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -73,12 +77,27 @@ export default function CitizenLogin() {
                 onChange={e => setCredentials({...credentials, password: e.target.value})}
               />
             </div>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-gray-700">Authenticator Code (Optional)</label>
+              <input 
+                type="text"
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-medical-blue outline-none bg-gray-50/50"
+                placeholder="Leave blank if 2FA is off"
+                onChange={e => setCredentials({...credentials, totp_code: e.target.value})}
+              />
+            </div>
             <motion.button 
               whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-              className="w-full py-4 bg-medical-dark text-white rounded-xl font-bold text-lg shadow-lg shadow-blue-900/30"
+              className={`w-full py-4 text-white rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all ${isLoading ? 'bg-gray-400 cursor-not-allowed shadow-none' : 'bg-medical-dark shadow-blue-900/30'}`}
               type="submit"
+              disabled={isLoading}
             >
-              Login
+              {isLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Logging in...
+                </>
+              ) : 'Login'}
             </motion.button>
             <p className="text-center text-sm text-gray-600">
               New to UPAHAAR? <Link href="/auth/citizen/register" className="text-medical-blue font-semibold hover:underline">Register</Link>
