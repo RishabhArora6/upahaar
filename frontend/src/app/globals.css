@@ -23,6 +23,12 @@ body {
     border: none !important;
     box-shadow: none !important;
 }
+#goog-gt-tt, .VIpgJd-yAWNEb-VIpgJd-fmcmS-sn54Q {
+    display: none !important;
+}
+body {
+    top: 0px !important;
+}
 .goog-te-gadget {
     color: transparent !important;
     font-size: 0px !important;
