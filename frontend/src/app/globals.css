@@ -23,6 +23,11 @@ body {
     border: none !important;
     box-shadow: none !important;
 }
+/* Prevent hover events on translated text from causing flashing */
+font {
+    pointer-events: none !important;
+    background-color: transparent !important;
+}
 #goog-gt-tt, .VIpgJd-yAWNEb-VIpgJd-fmcmS-sn54Q {
     display: none !important;
 }
