@@ -78,7 +78,7 @@ export default function CitizenLogin() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-700">Authenticator Code (Optional)</label>
+              <label className="text-sm font-semibold text-gray-700">Authenticator Code</label>
               <input 
                 type="text"
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-medical-blue outline-none bg-gray-50/50"

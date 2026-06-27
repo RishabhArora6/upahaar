@@ -58,7 +58,7 @@ export default function DoctorLogin() {
             {error && <div className="bg-red-50 text-red-500 p-3 rounded-lg text-sm font-semibold">{error}</div>}
             <div><label className="block text-sm font-medium text-gray-700">Doctor UPAHAAR ID</label><input required className="mt-1 w-full border border-gray-300 rounded-lg p-3" type="text" placeholder="UPHR-XXXXXX" value={upahaarId} onChange={(e) => setUpahaarId(e.target.value)} /></div>
             <div><label className="block text-sm font-medium text-gray-700">Password</label><input required className="mt-1 w-full border border-gray-300 rounded-lg p-3" type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} /></div>
-            <div><label className="block text-sm font-medium text-gray-700">Authenticator Code (Optional)</label><input className="mt-1 w-full border border-gray-300 rounded-lg p-3" type="text" placeholder="Leave blank if 2FA is off" value={totpCode} onChange={(e) => setTotpCode(e.target.value)} /></div>
+            <div><label className="block text-sm font-medium text-gray-700">Authenticator Code</label><input className="mt-1 w-full border border-gray-300 rounded-lg p-3" type="text" placeholder="Leave blank if 2FA is off" value={totpCode} onChange={(e) => setTotpCode(e.target.value)} /></div>
             <button disabled={loading} type="submit" className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-medical-dark hover:bg-gray-800 transition-colors disabled:opacity-50">
               {loading ? 'Authenticating...' : 'Secure Login'}
             </button>
