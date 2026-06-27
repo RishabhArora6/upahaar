@@ -30,9 +30,15 @@ export const scanPatientQr = (req, res) => {
             db.all(`SELECT * FROM prescriptions WHERE citizen_id = ? ORDER BY created_at DESC`, [patient.id], (err, prescriptions) => {
                 if (err) return res.status(500).json({ message: 'Error fetching patient timeline' });
 
-                res.json({
-                    patient,
-                    timeline: prescriptions
+                // 4. Fetch the citizen's vitals
+                db.all(`SELECT * FROM vitals WHERE user_id = ? ORDER BY recorded_at ASC`, [patient.id], (err, vitals) => {
+                    if (err) return res.status(500).json({ message: 'Error fetching patient vitals' });
+
+                    res.json({
+                        patient,
+                        timeline: prescriptions,
+                        vitals: vitals || []
+                    });
                 });
             });
         });

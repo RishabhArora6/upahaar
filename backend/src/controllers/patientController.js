@@ -269,3 +269,33 @@ export const revokeNotificationAccess = (req, res) => {
         });
     });
 };
+
+export const addVitals = (req, res) => {
+    const userId = req.user.id;
+    const { heart_rate, sugar_level, bp_systolic, bp_diastolic } = req.body;
+    const id = uuidv4();
+
+    db.run(
+        `INSERT INTO vitals (id, user_id, heart_rate, sugar_level, bp_systolic, bp_diastolic) VALUES (?, ?, ?, ?, ?, ?)`,
+        [id, userId, heart_rate || null, sugar_level || null, bp_systolic || null, bp_diastolic || null],
+        (err) => {
+            if (err) {
+                console.error("Error adding vitals:", err);
+                return res.status(500).json({ message: 'Failed to record vitals' });
+            }
+            res.status(201).json({ message: 'Vitals recorded successfully' });
+        }
+    );
+};
+
+export const getVitals = (req, res) => {
+    const userId = req.user.id;
+
+    db.all(`SELECT * FROM vitals WHERE user_id = ? ORDER BY recorded_at ASC`, [userId], (err, vitals) => {
+        if (err) {
+            console.error("Error fetching vitals:", err);
+            return res.status(500).json({ message: 'Error fetching vitals' });
+        }
+        res.json({ vitals });
+    });
+};

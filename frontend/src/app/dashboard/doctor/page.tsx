@@ -6,6 +6,7 @@ import { Scan, Search, User, Clock, Shield, LogOut, CheckCircle, AlertCircle, Ph
 import Link from 'next/link';
 import Script from 'next/script';
 import TwoFactorSetup from '../../components/TwoFactorSetup';
+import VitalChart from '../../components/VitalChart';
 
 export default function DoctorDashboard() {
   const [upahaarId, setUpahaarId] = useState('');
@@ -364,6 +365,14 @@ export default function DoctorDashboard() {
                               </div>
                            ))}
                         </div>
+                      </div>
+                    )}
+
+                    {/* Vitals Graph */}
+                    {patientData.vitals && (
+                      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                         <h3 className="text-lg font-bold text-gray-800 mb-2">Patient Vitals History</h3>
+                         <VitalChart vitals={patientData.vitals} />
                       </div>
                     )}
 

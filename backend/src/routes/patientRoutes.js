@@ -1,5 +1,5 @@
 import express from 'express';
-import { getProfile, updateProfile, uploadPrescription, getTimeline, getNearbyPharmacies, deletePrescription, getNotifications, acknowledgeNotification, revokeNotificationAccess } from '../controllers/patientController.js';
+import { getProfile, updateProfile, uploadPrescription, getTimeline, getNearbyPharmacies, deletePrescription, getNotifications, acknowledgeNotification, revokeNotificationAccess, addVitals, getVitals } from '../controllers/patientController.js';
 import { auth, requireRole } from '../middlewares/authMiddleware.js';
 import { upload } from '../middlewares/uploadMiddleware.js';
 
@@ -18,5 +18,9 @@ router.get('/pharmacies', auth, getNearbyPharmacies);
 router.get('/notifications', auth, requireRole(['CITIZEN']), getNotifications);
 router.post('/notifications/:id/acknowledge', auth, requireRole(['CITIZEN']), acknowledgeNotification);
 router.post('/notifications/:id/revoke', auth, requireRole(['CITIZEN']), revokeNotificationAccess);
+
+// Vitals
+router.get('/vitals', auth, getVitals);
+router.post('/vitals', auth, addVitals);
 
 export default router;

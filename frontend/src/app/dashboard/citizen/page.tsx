@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, Clock, FileText, Settings, QrCode, Pill, CheckCircle2, Trash2, ShieldAlert, Ban } from 'lucide-react';
+import { Upload, Clock, FileText, Settings, QrCode, Pill, CheckCircle2, Trash2, ShieldAlert, Ban, Activity } from 'lucide-react';
 import Link from 'next/link';
 import TwoFactorSetup from '../../components/TwoFactorSetup';
 import GoogleTranslate from '../../components/GoogleTranslate';
@@ -152,6 +152,9 @@ export default function CitizenDashboard() {
           </Link>
           <Link href="/dashboard/citizen/qr-card" className="flex items-center gap-3 hover:bg-white/5 p-3 rounded-lg transition-colors text-gray-300">
             <QrCode size={20} /> My QR Card
+          </Link>
+          <Link href="/dashboard/citizen/vitals" className="flex items-center gap-3 hover:bg-white/5 p-3 rounded-lg transition-colors text-gray-300">
+            <Activity size={20} /> Vital Tracker
           </Link>
           <Link href="/dashboard/citizen/profile-setup" className="flex items-center gap-3 hover:bg-white/5 p-3 rounded-lg transition-colors text-gray-300">
             <Settings size={20} /> Edit Profile

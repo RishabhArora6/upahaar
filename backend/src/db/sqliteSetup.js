@@ -141,5 +141,17 @@ export const initializeDB = async () => {
         FOREIGN KEY (doctor_id) REFERENCES users(id)
     )`);
     
+    // Vitals Tracker Table
+    await runCreate(`CREATE TABLE IF NOT EXISTS vitals (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        heart_rate REAL,
+        sugar_level REAL,
+        bp_systolic REAL,
+        bp_diastolic REAL,
+        recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+    )`);
+    
     console.log('Database tables verified/created.');
 };
