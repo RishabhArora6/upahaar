@@ -32,7 +32,7 @@ Now switch to the second CMD window and run the following commands:
 cd upahaar
 cd frontend
 npm install
-NEXT_PUBLIC_API_URL=http://localhost:5000 > .env.local
+echo NEXT_PUBLIC_API_URL=http://localhost:5000 > .env.local
 npm run dev
 ```
 
