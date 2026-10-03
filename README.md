@@ -9,6 +9,7 @@ You need the following things installed:
 - npm
 - Python 3.9+
 - Git
+- Tailwindcss/postcss
 
 Open 3 individual CMD windows. Now run the following commands on the first CMD window:
 ```bash
