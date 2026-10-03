@@ -14,6 +14,7 @@ Open 3 individual CMD windows. Now run the following commands on the first CMD w
 ```bash
 git clone https://github.com/RishabhArora6/upahaar.git
 cd upahaar
+cd backend
 (echo PORT=5000 & echo JWT_SECRET=your_secure_jwt_secret & echo GEMINI_API_KEY=your_gemini_api_key & echo GOOGLE_MAPS_API_KEY=your_google_maps_api_key & echo DATABASE_URL=your_postgresql_connection_string) > .env
 ```
 
